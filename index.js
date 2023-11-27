@@ -31,7 +31,7 @@ async function run() {
    const userCollection = client.db("campDb").collection("user");
    const contactCollection = client.db("campDb").collection("contact");
    const AddCartCollection = client.db("campDb").collection("cart");
-   const paymentCollection = client.db("campDb").collection("cart");
+   const paymentCollection = client.db("campDb").collection("payment");
      // jwt related api
      app.post('/jwt', async (req, res) => {
       const user = req.body;
@@ -192,6 +192,12 @@ app.get('/camps/:id',async(req,res)=>{
     const result = await AddCartCollection.insertOne(cartItem);
     res.send(result);
   });
+  app.delete('/carts/:id', async (req, res) => {
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) }
+    const result = await AddCartCollection.deleteOne(query);
+    res.send(result);
+  })
     // payment intent
     app.get('/payments/:email', verifyToken, async (req, res) => {
       const query = { email: req.params.email }
@@ -221,18 +227,22 @@ app.get('/camps/:id',async(req,res)=>{
     app.post('/payments', async (req, res) => {
       const payment = req.body;
       const paymentResult = await paymentCollection.insertOne(payment);
+      const filter = { _id: new ObjectId(payment.campItemIds) };
+      const existingCamp = await campCollection.findOne(filter);
+      const currentParticipantCount = Number(existingCamp?.participant) || 0;
+      const updateDoc = {
+        $set: { participant: currentParticipantCount + 1 }
+    };
+    const participantResult = await campCollection.updateOne(filter, updateDoc);
+      
+
     
-      //  carefully delete each item from the cart
       console.log('payment info', payment);
-      const query = {
-        _id: {
-          $in: payment.cartIds.map(id => new ObjectId(id))
-        }
-      };
+      const query = { _id: new ObjectId(payment.cartIds) }
     
-      const deleteResult = await AddCartCollection.deleteMany(query);
+      const deleteResult = await AddCartCollection.deleteOne(query);
     
-      res.send({ paymentResult, deleteResult });
+      res.send({ paymentResult,deleteResult,participantResult}); 
     })
  
     // Send a ping to confirm a successful connection
