@@ -282,11 +282,22 @@ app.get('/camps/:id',async(req,res)=>{
       res.send({ paymentResult,PostRegistration,deleteResult,participantResult}); 
     })
     app.get('/payment', async (req, res) => {
-    
-      
       const result = await paymentCollection.find().toArray();
       res.send(result);
     });
+ 
+    app.patch('/payment/:id',  async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          status: 'Approved'
+        }
+      }
+      const result = await paymentCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    })
+  
   
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
