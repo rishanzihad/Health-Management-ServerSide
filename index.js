@@ -3,6 +3,7 @@ const app = express();
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 require('dotenv').config()
+const stripe =require('stripe')(process.env.SECRET_KEY)
 const port = process.env.PORT || 5008;
 
 
@@ -30,6 +31,7 @@ async function run() {
    const userCollection = client.db("campDb").collection("user");
    const contactCollection = client.db("campDb").collection("contact");
    const AddCartCollection = client.db("campDb").collection("cart");
+   const paymentCollection = client.db("campDb").collection("cart");
      // jwt related api
      app.post('/jwt', async (req, res) => {
       const user = req.body;
@@ -71,6 +73,30 @@ async function run() {
     const result = await campCollection.insertOne(camps);
     res.send(result);
   });
+  app.patch('/camps/:id', verifyToken, verifyAdmin, async (req, res) => {
+      
+    const data = req.body;
+    const id = req.params.id;
+    const filter = { _id: new ObjectId(id) }
+    const updatedDoc = {
+      $set: {
+        participant:data.participant,
+        name: data.name,
+        image: res.data.data.display_url,
+        fees: data.fees,
+        scheduledDate: data.scheduledDate,
+        scheduledTime: data.scheduledTime,
+        location: data.location,
+        specializedServices: data.specializedServices,
+        healthcareProfessionals: data.healthcareProfessionals,
+        targetAudience: data.targetAudience,
+        comprehensiveDescription: data.comprehensiveDescription,
+      }
+    }
+
+    const result = await menuCollection.updateOne(filter, updatedDoc)
+    res.send(result);
+  })
 
 app.get('/camps/:id',async(req,res)=>{
   const id =req.params.id
@@ -82,6 +108,12 @@ app.get('/camps/:id',async(req,res)=>{
 
   app.get('/camps', async (req, res) => {
     const result = await campCollection.find().toArray();
+    res.send(result);
+  })
+  app.delete('/camps/:id',verifyToken,verifyAdmin, async (req, res) => {
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) }
+    const result = await campCollection.deleteOne(query);
     res.send(result);
   })
   app.post('/users', async (req, res) => {
@@ -126,7 +158,7 @@ app.get('/camps/:id',async(req,res)=>{
     res.send(result);
   })
 
-  app.delete('/users/:id',  async (req, res) => {
+  app.delete('/users/:id',verifyToken,verifyAdmin,  async (req, res) => {
     const id = req.params.id;
     const query = { _id: new ObjectId(id) }
     const result = await userCollection.deleteOne(query);
@@ -142,6 +174,12 @@ app.get('/camps/:id',async(req,res)=>{
     const result = await contactCollection.find().toArray();
     res.send(result);
   })
+  app.delete('/contact/:id',verifyToken,verifyAdmin,  async (req, res) => {
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) }
+    const result = await contactCollection.deleteOne(query);
+    res.send(result);
+  })
   app.get('/carts', async (req, res) => {
     const email = req.query.email;
     const query = { email: email };
@@ -154,6 +192,50 @@ app.get('/camps/:id',async(req,res)=>{
     const result = await AddCartCollection.insertOne(cartItem);
     res.send(result);
   });
+    // payment intent
+    app.get('/payments/:email', verifyToken, async (req, res) => {
+      const query = { email: req.params.email }
+      if (req.params.email !== req.decoded.email) {
+        return res.status(403).send({ message: 'forbidden access' });
+      }
+      const result = await paymentCollection.find(query).toArray();
+      res.send(result);
+    })
+    
+     app.post('/create-payment-intent', async (req, res) => {
+      const { fees } = req.body;
+      const amount = parseInt(fees * 100);
+      console.log(amount, 'amount inside the intent')
+  
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        payment_method_types: ['card']
+      });
+  
+      res.send({
+        clientSecret: paymentIntent.client_secret
+      })
+    });
+    
+    app.post('/payments', async (req, res) => {
+      const payment = req.body;
+      const paymentResult = await paymentCollection.insertOne(payment);
+    
+      //  carefully delete each item from the cart
+      console.log('payment info', payment);
+      const query = {
+        _id: {
+          $in: payment.cartIds.map(id => new ObjectId(id))
+        }
+      };
+    
+      const deleteResult = await AddCartCollection.deleteMany(query);
+    
+      res.send({ paymentResult, deleteResult });
+    })
+  
+ 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
