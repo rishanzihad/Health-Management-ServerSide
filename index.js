@@ -107,10 +107,17 @@ app.get('/camps/:id',async(req,res)=>{
   res.send(result)
 })
 
+
+ 
+  app.get('/registerInfo', async (req, res) => {
+    const result = await RegistrationCollection.find().toArray();
+    res.send(result);
+  })
   app.get('/camps', async (req, res) => {
     const result = await campCollection.find().toArray();
     res.send(result);
   })
+
   app.delete('/camps/:id',verifyToken,verifyAdmin, async (req, res) => {
     const id = req.params.id;
     const query = { _id: new ObjectId(id) }
@@ -128,11 +135,11 @@ app.get('/camps/:id',async(req,res)=>{
     const result = await userCollection.insertOne(user);
     res.send(result);
   });
-  app.get('/users', async (req, res) => {
+  app.get('/users',verifyToken, verifyAdmin, async (req, res) => {
     const result = await userCollection.find().toArray();
     res.send(result);
   })
-  app.get('/users/admin/:email',verifyToken,verifyAdmin, async (req, res) => {
+  app.get('/users/admin/:email',verifyToken, async (req, res) => {
     const email = req.params.email;
 
     if (email !== req.decoded.email) {
@@ -153,6 +160,32 @@ app.get('/camps/:id',async(req,res)=>{
     const updatedDoc = {
       $set: {
         role: 'admin'
+      }
+    }
+    const result = await userCollection.updateOne(filter, updatedDoc);
+    res.send(result);
+  })
+  app.get('/users/healthcareProfessionals/:email',verifyToken, async (req, res) => {
+    const email = req.params.email;
+
+    if (email !== req.decoded.email) {
+      return res.status(403).send({ message: 'forbidden access' })
+    }
+
+    const query = { email: email };
+    const user = await userCollection.findOne(query);
+    let healthcareProfessionals = false;
+    if (user) {
+      healthcareProfessionals = user?.role === 'healthcareProfessionals';
+    }
+    res.send({ healthcareProfessionals });
+  })
+  app.patch('/users/healthcareProfessionals/:id',  async (req, res) => {
+    const id = req.params.id;
+    const filter = { _id: new ObjectId(id) };
+    const updatedDoc = {
+      $set: {
+        role: 'HealthcareProfessionals'
       }
     }
     const result = await userCollection.updateOne(filter, updatedDoc);
@@ -242,13 +275,19 @@ app.get('/camps/:id',async(req,res)=>{
 
     
       console.log('payment info', payment);
-     // const query = { _id: new ObjectId(payment.cartIds) }
+      const query = { _id: new ObjectId(payment.cartIds) }
 
-      //const deleteResult = await AddCartCollection.deleteOne(query);
+      const deleteResult = await AddCartCollection.deleteOne(query);
     
-      res.send({ paymentResult,PostRegistration,participantResult}); 
+      res.send({ paymentResult,PostRegistration,deleteResult,participantResult}); 
     })
- 
+    app.get('/payment', async (req, res) => {
+    
+      
+      const result = await paymentCollection.find().toArray();
+      res.send(result);
+    });
+  
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
