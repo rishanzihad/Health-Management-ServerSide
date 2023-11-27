@@ -31,6 +31,7 @@ async function run() {
    const userCollection = client.db("campDb").collection("user");
    const contactCollection = client.db("campDb").collection("contact");
    const AddCartCollection = client.db("campDb").collection("cart");
+   const RegistrationCollection = client.db("campDb").collection("register");
    const paymentCollection = client.db("campDb").collection("payment");
      // jwt related api
      app.post('/jwt', async (req, res) => {
@@ -227,6 +228,9 @@ app.get('/camps/:id',async(req,res)=>{
     app.post('/payments', async (req, res) => {
       const payment = req.body;
       const paymentResult = await paymentCollection.insertOne(payment);
+      const filterReg = { _id: new ObjectId(payment.cartIds) };
+      const existingCart = await AddCartCollection.findOne(filterReg);
+      const PostRegistration=await  RegistrationCollection.insertOne(existingCart)
       const filter = { _id: new ObjectId(payment.campItemIds) };
       const existingCamp = await campCollection.findOne(filter);
       const currentParticipantCount = Number(existingCamp?.participant) || 0;
@@ -238,11 +242,11 @@ app.get('/camps/:id',async(req,res)=>{
 
     
       console.log('payment info', payment);
-      const query = { _id: new ObjectId(payment.cartIds) }
+     // const query = { _id: new ObjectId(payment.cartIds) }
+
+      //const deleteResult = await AddCartCollection.deleteOne(query);
     
-      const deleteResult = await AddCartCollection.deleteOne(query);
-    
-      res.send({ paymentResult,deleteResult,participantResult}); 
+      res.send({ paymentResult,PostRegistration,participantResult}); 
     })
  
     // Send a ping to confirm a successful connection
