@@ -117,6 +117,37 @@ app.get('/camps/:id',async(req,res)=>{
     const result = await campCollection.find().toArray();
     res.send(result);
   })
+  app.patch('/camps/:id', verifyToken, verifyAdmin, async (req, res) => {
+      
+    const data= req.body;
+    const id = req.params.id;
+    const filter = { _id: new ObjectId(id) }
+    const updatedDoc = {
+      $set:  { name:data.name,
+        organizers:data.organizers,
+        participant:data.participant,
+        scheduledDate:data.scheduledDate,
+        scheduledTime:data.scheduledTime,
+        specializedServices:data.specializedServices,
+        targetAudience:data.targetAudience ,
+        healthcareProfessionals:data.healthcareProfessionals,
+         comprehensiveDescription:data.comprehensiveDescription, 
+         fees:data.fees,
+          image:data.image,
+           location:data.location,
+          
+               }
+    }
+
+    const result = await campCollection.updateOne(filter, updatedDoc)
+    res.send(result);
+  })
+app.get('/camps/:id', async (req, res) => {
+  const id = req.params.id;
+  const query = { _id: new ObjectId(id) }
+  const result = await campCollection.findOne(query);
+  res.send(result);
+})
 
   app.delete('/camps/:id',verifyToken,verifyAdmin, async (req, res) => {
     const id = req.params.id;
