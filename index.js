@@ -94,7 +94,7 @@ async function run() {
       }
     }
 
-    const result = await menuCollection.updateOne(filter, updatedDoc)
+    const result = await campCollection.updateOne(filter, updatedDoc)
     res.send(result);
   })
 
@@ -202,7 +202,7 @@ app.get('/camps/:id',async(req,res)=>{
       res.send(result);
     })
     
-     app.post('/create-payment-intent', async (req, res) => {
+    app.post('/create-payment-intent', async (req, res) => {
       const { fees } = req.body;
       const amount = parseInt(fees * 100);
       console.log(amount, 'amount inside the intent')
@@ -217,7 +217,7 @@ app.get('/camps/:id',async(req,res)=>{
         clientSecret: paymentIntent.client_secret
       })
     });
-    
+  
     app.post('/payments', async (req, res) => {
       const payment = req.body;
       const paymentResult = await paymentCollection.insertOne(payment);
@@ -234,7 +234,6 @@ app.get('/camps/:id',async(req,res)=>{
     
       res.send({ paymentResult, deleteResult });
     })
-  
  
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
