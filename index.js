@@ -83,7 +83,7 @@ async function run() {
       $set: {
         participant:data.participant,
         name: data.name,
-        image: res.data.data.display_url,
+        image: data.image,
         fees: data.fees,
         scheduledDate: data.scheduledDate,
         scheduledTime: data.scheduledTime,
@@ -126,6 +126,7 @@ app.get('/camps/:id',async(req,res)=>{
   app.patch('/camps/:id', verifyToken, verifyAdmin, async (req, res) => {
       
     const data= req.body;
+    console.log(data)
     const id = req.params.id;
     const filter = { _id: new ObjectId(id) }
     const updatedDoc = {
