@@ -113,6 +113,12 @@ app.get('/camps/:id',async(req,res)=>{
     const result = await RegistrationCollection.find().toArray();
     res.send(result);
   })
+  app.delete('/registerInfo/:id',verifyToken,verifyAdmin, async (req, res) => {
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) }
+    const result = await RegistrationCollection.deleteOne(query);
+    res.send(result);
+  })
   app.get('/camps', async (req, res) => {
     const result = await campCollection.find().toArray();
     res.send(result);
