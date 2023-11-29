@@ -197,7 +197,21 @@ app.get('/camps/:id', async (req, res) => {
     const result = await userCollection.updateOne(query, updatedDoc);
     res.send(result);
 })
+app.get('/users/user/:email',verifyToken, async (req, res) => {
+  const email = req.params.email;
 
+  if (email !== req.decoded.email) {
+    return res.status(403).send({ message: 'forbidden access' })
+  }
+
+  const query = { email: email };
+  const users = await userCollection.findOne(query);
+  let user = false;
+  if (users) {
+    user = users?.role === 'user';
+  }
+  res.send({ user});
+})
   app.get('/users/admin/:email',verifyToken, async (req, res) => {
     const email = req.params.email;
 
@@ -235,7 +249,7 @@ app.get('/camps/:id', async (req, res) => {
     const user = await userCollection.findOne(query);
     let healthcareProfessionals = false;
     if (user) {
-      healthcareProfessionals = user?.role === 'healthcareProfessionals';
+      healthcareProfessionals = user?.role === 'HealthcareProfessionals';
     }
     res.send({ healthcareProfessionals });
   })
