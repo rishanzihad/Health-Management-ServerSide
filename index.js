@@ -33,6 +33,8 @@ async function run() {
    const AddCartCollection = client.db("campDb").collection("cart");
    const RegistrationCollection = client.db("campDb").collection("register");
    const paymentCollection = client.db("campDb").collection("payment");
+   const feedBAckCollection = client.db("campDb").collection("feedBack");
+   const upComingCampsCollection = client.db("campDb").collection("upcomingcamps");
      // jwt related api
      app.post('/jwt', async (req, res) => {
       const user = req.body;
@@ -69,9 +71,14 @@ async function run() {
     }
    
 
-   app.post('/camps', async (req, res) => {
+   app.post('/camps',verifyToken,verifyAdmin, async (req, res) => {
     const camps = req.body;
     const result = await campCollection.insertOne(camps);
+    res.send(result);
+  });
+   app.post('/upcomingcamps',verifyToken,verifyAdmin, async (req, res) => {
+    const upcomingcamps = req.body;
+    const result = await upComingCampsCollection.insertOne(upcomingcamps);
     res.send(result);
   });
   app.patch('/camps/:id', verifyToken, verifyAdmin, async (req, res) => {
@@ -99,17 +106,26 @@ async function run() {
     res.send(result);
   })
 
-app.get('/camps/:id',async(req,res)=>{
-  const id =req.params.id
-  const query ={_id: new ObjectId(id)}
-  const result =await campCollection.findOne(query)
-  
-  res.send(result)
-})
+  app.get('/registerInfo/:email',verifyToken,  async (req, res) => {
+    const email = req.params.email;
+   
 
+    const query = { email: email };
+    const result = await RegistrationCollection.find(query).toArray();
+    res.send(result);
+  })
 
+  app.post('/feedback',verifyToken, async (req, res) => {
+    const feedBack = req.body;
+    const result = await feedBAckCollection.insertOne(feedBack);
+    res.send(result);
+  });
+  app.get('/feedback', async (req, res) => {
+    const result = await feedBAckCollection.find().toArray();
+    res.send(result);
+  })
  
-  app.get('/registerInfo', async (req, res) => {
+  app.get('/registerInfo', verifyToken,verifyAdmin, async (req, res) => {
     const result = await RegistrationCollection.find().toArray();
     res.send(result);
   })
@@ -121,6 +137,10 @@ app.get('/camps/:id',async(req,res)=>{
   })
   app.get('/camps', async (req, res) => {
     const result = await campCollection.find().toArray();
+    res.send(result);
+  })
+  app.get('/upcomingcamps', async (req, res) => {
+    const result = await upComingCampsCollection.find().toArray();
     res.send(result);
   })
   app.patch('/camps/:id', verifyToken, verifyAdmin, async (req, res) => {
