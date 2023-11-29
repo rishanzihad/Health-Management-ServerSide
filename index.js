@@ -348,11 +348,11 @@ app.get('/users/user/:email',verifyToken, async (req, res) => {
 
     
       console.log('payment info', payment);
-      const query = { _id: new ObjectId(payment.cartIds) }
+      //const query = { _id: new ObjectId(payment.cartIds) }
 
-      const deleteResult = await AddCartCollection.deleteOne(query);
+      //const deleteResult = await AddCartCollection.deleteOne(query);
     
-      res.send({ paymentResult,PostRegistration,deleteResult,participantResult}); 
+      res.send({ paymentResult,PostRegistration,participantResult}); 
     })
     app.get('/payment', async (req, res) => {
       const result = await paymentCollection.find().toArray();
