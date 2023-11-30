@@ -26,8 +26,9 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server (optional starting in v4.7)
-    await client.connect();
+   // await client.connect();
    const campCollection = client.db("campDb").collection("camp");
+   const HealthTipsCollection = client.db("campDb").collection("healthTips");
    const userCollection = client.db("campDb").collection("user");
    const contactCollection = client.db("campDb").collection("contact");
    const AddCartCollection = client.db("campDb").collection("cart");
@@ -74,6 +75,11 @@ async function run() {
    app.post('/camps',verifyToken,verifyAdmin, async (req, res) => {
     const camps = req.body;
     const result = await campCollection.insertOne(camps);
+    res.send(result);
+  });
+   app.post('/healthTips',verifyToken,verifyAdmin, async (req, res) => {
+    const tips = req.body;
+    const result = await HealthTipsCollection.insertOne(tips);
     res.send(result);
   });
    app.post('/upcomingcamps',verifyToken,verifyAdmin, async (req, res) => {
@@ -135,6 +141,10 @@ async function run() {
     const result = await RegistrationCollection.deleteOne(query);
     res.send(result);
   })
+  app.get('/healthTips', async (req, res) => {
+    const result = await HealthTipsCollection.find().toArray();
+    res.send(result);
+  })
   app.get('/camps', async (req, res) => {
     const result = await campCollection.find().toArray();
     res.send(result);
@@ -169,10 +179,16 @@ async function run() {
     const result = await campCollection.updateOne(filter, updatedDoc)
     res.send(result);
   })
-app.get('/camps/:id', async (req, res) => {
+app.get('/camps/:id',verifyToken, async (req, res) => {
   const id = req.params.id;
   const query = { _id: new ObjectId(id) }
   const result = await campCollection.findOne(query);
+  res.send(result);
+})
+app.get('/upcomingcamps/:id', async (req, res) => {
+  const id = req.params.id;
+  const query = { _id: new ObjectId(id) }
+  const result = await upComingCampsCollection.findOne(query);
   res.send(result);
 })
 
@@ -356,7 +372,10 @@ app.get('/users/user/:email',verifyToken, async (req, res) => {
       const paymentResult = await paymentCollection.insertOne(payment);
       const filterReg = { _id: new ObjectId(payment.cartIds) };
       const existingCart = await AddCartCollection.findOne(filterReg);
-      const PostRegistration=await  RegistrationCollection.insertOne(existingCart)
+      const PostRegistration = await RegistrationCollection.insertOne({
+        ...existingCart,
+        paymentId: paymentResult.insertedId  
+      });
       const filter = { _id: new ObjectId(payment.campItemIds) };
       const existingCamp = await campCollection.findOne(filter);
       const currentParticipantCount = Number(existingCamp?.participant) || 0;
